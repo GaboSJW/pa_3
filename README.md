@@ -70,19 +70,15 @@ vowel_data <- read_csv('./data/vowel_data.csv')
 
 ``` r
 #calculate average F1/F2 centroids and trajectory length (include SD)
-vowel_data %>% 
+sum_vowel_data<-vowel_data %>% 
+  group_by(vowel, language) %>% 
   summarize(f1_cent_avg = mean(f1_cent), sd_f1 = sd(f1_cent), f2_cent_avg = mean(f2_cent),sd_f2 = sd(f2_cent), tl_avg = mean(tl), sd_tl = sd(tl))
 ```
 
-    ## # A tibble: 1 × 6
-    ##   f1_cent_avg sd_f1 f2_cent_avg sd_f2 tl_avg sd_tl
-    ##         <dbl> <dbl>       <dbl> <dbl>  <dbl> <dbl>
-    ## 1        430.  203.       1420.  563.   296.  274.
+    ## `summarise()` has grouped output by 'vowel'. You can override using the
+    ## `.groups` argument.
 
 ``` r
-#???1 Mean for everything or mean for each vowel-langugage combination?
-
-
 #trajectory length as a function of vowel and language
 vowel_data %>% 
   ggplot(., aes(x = vowel, y = tl, color = language)) + 
@@ -92,65 +88,79 @@ vowel_data %>%
 ![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
 ``` r
-#???2 And I have a big question on "of vowel and language", so here are some solutions I propose
 #F1 as a function of vowel and language
 #solution 1
-vowel_data %>% 
-  ggplot(., aes(x = language, y = f1_cent, color = vowel)) + 
-    geom_boxplot(alpha = 0.7)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
-
-``` r
+#vowel_data %>% 
+#  ggplot(., aes(x = language, y = f1_cent, color = vowel)) + 
+#    geom_boxplot(alpha = 0.7)
 #solution 1.5
 vowel_data %>% 
   ggplot(., aes(x = vowel, y = f1_cent, color = language)) + 
     geom_boxplot(alpha = 0.7)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
 
 ``` r
 #solution 2
-vowel_data %>% 
-  unite(., col = vowel_language, vowel, language, sep = "_", remove = FALSE) %>% 
-  ggplot(., aes(x = vowel_language, y = f1_cent)) + 
-    geom_boxplot(alpha = 1)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->
-
-``` r
+#vowel_data %>% 
+#  unite(., col = vowel_language, vowel, language, sep = "_", remove = FALSE) %>% 
+#  ggplot(., aes(x = vowel_language, y = f1_cent)) + 
+#    geom_boxplot(alpha = 1)
 #solution 3
-vowel_data %>%
-  ggplot(aes(x = vowel, y = f1_cent)) +
-  geom_boxplot() +
-  facet_wrap(vars(language), ncol = 2) +
-  labs(x = "vowels", y = "f1 centroid value")
-```
+#vowel_data %>%
+#  ggplot(aes(x = vowel, y = f1_cent)) +
+#  geom_boxplot() +
+#  facet_wrap(vars(language), ncol = 2) +
+#  labs(x = "vowels", y = "f1 centroid value")
 
-![](README_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->
-
-``` r
 #F2 as a function of vowel and language
 vowel_data %>% 
   ggplot(., aes(x = vowel, y = f2_cent, color = language)) + 
     geom_boxplot(alpha = 0.7)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
 
 ``` r
-#???3 (Bonus) Plot trajectory length in F1/F2 vowel space (don't know how to draw the fancy point-line thingy )
-#(Bonus) Plot spectral centroids in F1/F2 vowel space
+#I'll just keep them 
 
-vowel_data %>% 
-  ggplot(., aes(x = f2_cent, y = f1_cent, color = vowel, shape = language)) + 
-    geom_point(alpha = 0.8) + 
-    #???4 geom_text(data = vowel_means, aes(label = vowel), size = 5) + (don't know how to get the mean for each group)
+#Preparing DF for Bonus
+tl_vowel_data<-vowel_data %>% 
+  group_by(vowel, language) %>% 
+  summarize(f1_20 = mean(f1_20), f1_35 = mean(f1_35), f1_50 = mean(f1_50), f1_65 = mean(f1_65), f1_80 = mean(f1_80), f2_20 = mean(f2_20), f2_35 = mean(f2_35), f2_50 = mean(f2_50), f2_65 = mean(f2_65), f2_80 = mean(f2_80))
+```
+
+    ## `summarise()` has grouped output by 'vowel'. You can override using the
+    ## `.groups` argument.
+
+``` r
+#longer
+vowel_data_long<-tl_vowel_data %>% 
+  pivot_longer(., cols=f1_20:f2_80, names_pattern = "(.*)_(.*)", names_to = c("formant", "time")) %>% 
+  pivot_wider(., names_from = formant, values_from = value)
+
+#(Bonus) Plot trajectory length in F1/F2 vowel space (don't know how to draw the fancy point-line thingy )
+
+vowel_data_long %>% 
+  ggplot(., aes(x = f2, y = f1, color = vowel, shape = language)) +
+    geom_point(alpha = 0.5, size = 4) + 
+    geom_path(alpha = 0.6) +
+    geom_label(data = sum_vowel_data, aes(x = f2_cent_avg, y = f1_cent_avg, label = vowel, color = vowel), size = 5, alpha = 0.3) +
     scale_y_reverse() + 
     scale_x_reverse()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-7.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->
+
+``` r
+#(Bonus) Plot spectral centroids in F1/F2 vowel space
+vowel_data %>% 
+  ggplot(., aes(x = f2_cent, y = f1_cent, color = vowel, shape = language)) +
+    geom_point(alpha = 0.5, size = 4) + 
+    geom_text(data = sum_vowel_data, aes(x = f2_cent_avg, y = f1_cent_avg, label = vowel, color = vowel), size = 5) +
+    scale_y_reverse() + 
+    scale_x_reverse()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->
